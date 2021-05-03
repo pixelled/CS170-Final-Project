@@ -1,3 +1,5 @@
+
+
 import networkx as nx
 import graph_tool as gt
 import graph_tool.search as gt_search
@@ -62,14 +64,18 @@ def calculate_score(G, c, k):
     """
     assert is_valid_solution(G, c, k)
     node_count = G.num_vertices()
-    original_min_dist = gt_topo.shortest_path(G, G.vertex(0), G.vertex(node_count - 1), weights=G.edge_properties['weight'])
+    original_min_dist = gt_topo.shortest_distance(G, G.vertex(0), G.vertex(node_count - 1), weights=G.edge_properties['weight'])
 
     mask_e = G.new_edge_property("bool")
+    for road in k:
+        mask_e[G.edge(road[0], road[1])] = 1
     G.set_edge_filter(mask_e, inverted=True)
     mask_v = G.new_vertex_property("bool")
+    for city in c:
+        mask_v[G.vertex(city)] = 1
     G.set_vertex_filter(mask_v, inverted=True)
 
-    final_min_dist = gt_topo.shortest_path(G, G.vertex(0), G.vertex(node_count - 1), weights=G.edge_properties['weight'])
+    final_min_dist = gt_topo.shortest_distance(G, G.vertex(0), G.vertex(node_count - 1), weights=G.edge_properties['weight'])
 
     G.set_edge_filter(None)
     G.set_vertex_filter(None)

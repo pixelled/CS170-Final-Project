@@ -4,6 +4,7 @@ import os
 import networkx as nx
 
 import utils
+from utils import *
 
 def validate_file(path):
     """File must not exceed 100KB and must contain only numbers and spaces"""
@@ -87,7 +88,7 @@ def read_output_file(G, path):
         score: the difference between the new and original shortest path
     """
     H = G
-    size = num_vertices(H)
+    size = H.num_vertices()
     if size >= 20 and size <= 30:
         max_cities = 1
         max_roads = 15

@@ -4,6 +4,8 @@ from utils import is_valid_solution, calculate_score
 import sys
 from os.path import basename, normpath
 import glob
+import MVE_solver
+import MVN
 
 
 def solve(G):
@@ -14,11 +16,34 @@ def solve(G):
         c: list of cities to remove
         k: list of edges to remove
     """
-    pass
+    g = MVE_solver.nx2gt(G)
 
+    size = G.num_vertices()
+    if size >= 20 and size <= 30:
+        max_cities = 1
+        max_roads = 15
+    elif size > 30 and size <= 50:
+        max_cities = 3
+        max_roads = 50
+    elif size > 50 and size <= 100:
+        max_cities = 5
+        max_roads = 100
+
+    k = MVE_solver.solver(g, max_roads)
+    c = MVN.solver(g, max_cities)
+    g.set_edge_filter(None)
+    g.set_vertex_filter(None)
+    return c, k
+
+if __name__ == '__main__':
+    path = "test.in"
+    G = read_input_file(path)
+    c, k = solve(G)
+    assert is_valid_solution(G, c, k)
+    print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+    write_output_file(G, c, k, 'test.out')
 
 # Here's an example of how to run your solver.
-
 # Usage: python3 solver.py test.in
 
 # if __name__ == '__main__':
