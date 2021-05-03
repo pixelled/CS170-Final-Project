@@ -1,12 +1,13 @@
 import networkx as nx
+
+import MVE_solver
 from parse import read_input_file, write_output_file
 from utils import is_valid_solution, calculate_score
 import sys
 from os.path import basename, normpath
 import glob
-import MVE_solver
+import MVE_solver as MVE
 import MVN
-
 
 def solve(G):
     """
@@ -18,7 +19,7 @@ def solve(G):
     """
     g = MVE_solver.nx2gt(G)
 
-    size = G.num_vertices()
+    size = g.num_vertices()
     if size >= 20 and size <= 30:
         max_cities = 1
         max_roads = 15
@@ -29,19 +30,28 @@ def solve(G):
         max_cities = 5
         max_roads = 100
 
-    k = MVE_solver.solver(g, max_roads)
-    c = MVN.solver(g, max_cities)
+    t = g.vertex(g.num_vertices() - 1)
+    mvn_solver = MVN.MVNSolver(t)
+    mve_solver = MVE.MVE_solver(t)
+    c = mvn_solver.solve(g, max_cities)
+    k = mve_solver.solve(g, max_roads)
+    if len(c) < max_cities:
+        c1 = mvn_solver.solve(g, max_cities - len(c))
+        c.extend(c1)
+
     g.set_edge_filter(None)
     g.set_vertex_filter(None)
     return c, k
 
 if __name__ == '__main__':
-    path = "test.in"
-    G = read_input_file(path)
-    c, k = solve(G)
-    assert is_valid_solution(G, c, k)
-    print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
-    write_output_file(G, c, k, 'test.out')
+    for i in range(1, 10):
+        path = f"inputs/large/large-{i}.in"
+        G = read_input_file(path)
+        c, k = solve(G)
+        assert is_valid_solution(G, c, k)
+        print(f"{i}th input: len(c):{len(c)}, len(k):{len(k)}")
+        print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+        write_output_file(G, c, k, 'test.out')
 
 # Here's an example of how to run your solver.
 # Usage: python3 solver.py test.in

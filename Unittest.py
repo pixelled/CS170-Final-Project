@@ -8,6 +8,7 @@ import graph_tool as gt
 import graph_tool.draw as gt_draw
 import graph_tool.stats as gt_stat
 
+
 class MyTestCase(unittest.TestCase):
     def get_graph_sample(self):
 
@@ -128,6 +129,13 @@ class MyTestCase(unittest.TestCase):
         print(gt_topo.shortest_distance(g, g.vertex(0), g.vertex(g.num_vertices() - 1), weights=g.edge_properties['weight']))
         print(edge_to_remove)
         pass
+
+    def test_MVE(self):
+        g = self.get_test_sample()
+        target = g.vertex(g.num_vertices() - 1)
+        my_MVE = MVE_solver.MVE_solver(target)
+        edge_list = my_MVE.solve(g, 5)
+        print(edge_list)
 
 
 if __name__ == '__main__':

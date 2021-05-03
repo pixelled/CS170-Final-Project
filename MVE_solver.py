@@ -60,24 +60,14 @@ def get_shortest_path_tree(g: gt.Graph, source):
     return shortest_path_tree, dist_map
 
 
-def get_shortest_st_path(g: gt.Graph):
-    """ Return the shortest path from s to t. """
-    source = g.vertex(0)
-    target = g.vertex(g.num_vertices() - 1)
-    _, e_list = gt_topo.shortest_path(g, source, target, weights=g.edge_properties['weight'])
-    return e_list
-
-
-def get_cut_from_SPT(g:gt.Graph, shortest_path_tree: gt.Graph, edge_to_delete):
+def get_cut_from_SPT(g: gt.Graph, shortest_path_tree: gt.Graph, edge_to_delete):
     """
     After deleting <edge_to_delete>, we will have 2 trees. The 2 trees divide the node set of
     graph <g> into two subsets. The function returns the cut that forms these two node subsets.
     Args:
         shortest_path_tree:
         edge_to_delete:
-
     Returns:
-
     """
     # Assuming the edge_to_delete is (u,v), v is the root of the second tree.
     cut_list = []
@@ -94,112 +84,94 @@ def get_cut_from_SPT(g:gt.Graph, shortest_path_tree: gt.Graph, edge_to_delete):
             cut = g.edge(n_1, n_2)
             if cut is not None:
                 cut_list.append(cut)
-    # The reason to remove this cut is that the best path of last iteration contains this path.
+    # The reason to remove this cut is that the best path of last iteration contains this cut(edge).
     cut_list.remove(edge_to_delete)
     return cut_list
 
 
-def solver(g: gt.Graph, k):
+class MVE_solver:
     """
-    MVE_solver
-    Args:
-        g: The graph where we delete edges and vertices
-        k: The maximum number of edges to delete
-
-    Returns:
-        edges_to_delete: a list of edges to be removed
+    Usage:
+        Set the maximum number of edges to delete                   >>> k = 2
+        Initilize a MVE_solver class and specify the target         >>> my_MVE = MVE_solver.MVN_solver(target)
+        attain the edges deleted and a resulting graph              >>> edge_list = my_MVE.solver(g, 4)
     """
-    mask_e = g.new_edge_property("bool")
-    g.set_edge_filter(mask_e, inverted=True)
-    print([x for x in g.get_edge_filter()])
-    list_edge_to_remove = []
+    def __init__(self, target):
+        self.target = target
 
-    for i in range(k):
-        best_edge, stop_indicator = best_edge_to_remove(g)
-        if stop_indicator:
-            break
-        else:
-            list_edge_to_remove.append((int(best_edge.source()), int(best_edge.target())))
-            mask_e[best_edge] = 1
+    def get_shortest_st_path(self, g: gt.Graph):
+        """ Return the shortest path from s to t. """
+        source = g.vertex(0)
+        target = self.target
+        _, e_list = gt_topo.shortest_path(g, source, target, weights=g.edge_properties['weight'])
+        return e_list
 
-    return list_edge_to_remove
+    def solve(self, g: gt.Graph, k):
+        """
+        MVE_solver
+        Args:
+            g: The graph where we delete edges and vertices
+            k: The maximum number of edges to delete
 
+        Returns:
+            edges_to_delete: a list of edges to be removed
+        """
+        mask_e = g.new_edge_property("bool")
+        g.set_edge_filter(mask_e, inverted=True)
+        print([x for x in g.get_edge_filter()])
+        list_edge_to_remove = []
 
-def best_edge_to_remove(g: gt.Graph):
-    s_spt_tree, s_dist_map = get_shortest_path_tree(g, g.vertex(0))
+        for i in range(k):
+            best_edge, stop_indicator = self.best_edge_to_remove(g)
+            if stop_indicator:
+                break
+            else:
+                list_edge_to_remove.append((int(best_edge.source()), int(best_edge.target())))
+                mask_e[best_edge] = 1
 
-    # drawing for debug, comment it when unnecessary.
-    # gt_draw.graph_draw(s_spt_tree, vertex_text=s_spt_tree.vertex_index)
+        return list_edge_to_remove
 
-    t_spt_tree, t_dist_map = get_shortest_path_tree(g, g.vertex(g.num_vertices() - 1))
+    def best_edge_to_remove(self, g: gt.Graph):
+        s_spt_tree, s_dist_map = get_shortest_path_tree(g, g.vertex(0))
+        t_spt_tree, t_dist_map = get_shortest_path_tree(g, self.target)
+        st_path_edges = self.get_shortest_st_path(g)
 
-    # drawing for debug, comment it when unnecessary.
-    # gt_draw.graph_draw(t_spt_tree, vertex_text=t_spt_tree.vertex_index)
+        max_min_distance = float("-inf")
+        best_edge_to_remove = None
+        """
+        Note: The <occurrence_empty_cut> records the number of occurrences of empty cut_list, which means this edge 
+        cannot be removed, or otherwise the graph would be disconnected. If the removal of each edge on the shortest 
+        path would disconnect the graph, then we stop iteration (Set <iter_stop_indicator> to be True).
+        """
+        occurrence_empty_cut = 0
+        iter_stop_indicator = False
+        num_edge_of_st_path = len(st_path_edges)
+        for e in st_path_edges:
 
-    st_path_edges = get_shortest_st_path(g)
+            min_dist = float("inf")
+            # The distance of path equals <shortest_path_from_s_to_u>
+            # + <edge_weight_u_to_v> + <shortest_path_from_t_to_v>
+            cut_list = get_cut_from_SPT(g, s_spt_tree, e)
+            if len(cut_list) == 0:
+                occurrence_empty_cut += 1
+                continue
+            for cut in cut_list:
+                u = cut.source()
+                v = cut.target()
+                dist_s_to_u = s_dist_map[u]
+                dist_u_to_v = g.edge_properties['weight'][cut]
+                dist_v_to_t = t_dist_map[v]
+                dist = dist_s_to_u + dist_u_to_v + dist_v_to_t
+                # min_dist of specific edge removal
+                if dist < min_dist:
+                    min_dist = dist
+            # The maximum min_dist of all edge removals
+            if min_dist > max_min_distance:
+                best_edge_to_remove = e
+                max_min_distance = min_dist
 
-    max_min_distance = float("-inf")
-    best_edge_to_remove = None
-    """
-    Note: The <occurrence_empty_cut> records the number of occurrences of empty cut_list, which means this edge 
-    cannot be removed, or otherwise the graph would be disconnected. If the removal of each edge on the shortest 
-    path would disconnect the graph, then we stop iteration (Set <iter_stop_indicator> to be True).
-    """
-    occurrence_empty_cut = 0
-    iter_stop_indicator = False
-    num_edge_of_st_path = len(st_path_edges)
-    for e in st_path_edges:
+        if occurrence_empty_cut == num_edge_of_st_path:
+            iter_stop_indicator = True
 
-        min_dist = float("inf")
-        # The distance of path equals <shortest_path_from_s_to_u> + <edge_weight_u_to_v> + <shortest_path_from_t_to_v>
-        cut_list = get_cut_from_SPT(g, s_spt_tree, e)
-        if len(cut_list) == 0:
-            occurrence_empty_cut += 1
-            continue
-        for cut in cut_list:
-            u = cut.source()
-            v = cut.target()
-            dist_s_to_u = s_dist_map[u]
-            dist_u_to_v = g.edge_properties['weight'][cut]
-            dist_v_to_t = t_dist_map[v]
+        return best_edge_to_remove, iter_stop_indicator
 
-            dist = dist_s_to_u + dist_u_to_v + dist_v_to_t
-
-            if dist < min_dist:
-                min_dist = dist
-
-        if min_dist > max_min_distance:
-            best_edge_to_remove = e
-            max_min_distance = min_dist
-
-    if occurrence_empty_cut == num_edge_of_st_path:
-        iter_stop_indicator = True
-
-    return best_edge_to_remove, iter_stop_indicator
-
-
-""" The following are abandoned methods """
-def get_shortest_path_tree_v1(g: gt.Graph, source):
-    """
-    Construct a shortest path tree from source
-    Args:
-        g: The graph
-        source:
-
-    Returns:
-        short_path_tree
-    """
-    shortest_path_tree = gt.Graph(directed=True)
-
-    target_list = [v for v in g.vertices()]
-    target_list.remove(g.vertex(0))
-
-    SPT_edges = set()
-    for v in target_list:
-        _, e_list = gt_topo.shortest_path(g, source, v)
-        SPT_edges = SPT_edges.union(set(e_list))
-    shortest_path_tree.add_edge_list(SPT_edges)
-
-    shortest_path_tree.set_reversed(is_reversed=True)
-
-    return shortest_path_tree
