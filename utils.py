@@ -1,4 +1,19 @@
 import networkx as nx
+import graph_tool as gt
+import graph_tool.search as gt_search
+import graph_tool.topology as gt_topo
+
+class VisitorConnected(gt_search.DFSVisitor):
+    def __init__(self):
+        self.c = 0
+
+    def discover_vertex(self, u):
+        self.c += 1
+
+def is_connected(G):
+    visitor = VisitorConnected()
+    gt_search.dfs_search(G, G.vertex(0), visitor);
+    return visitor.c == G.num_vertices()
 
 def is_valid_solution(G, c, k):
     """
@@ -10,21 +25,30 @@ def is_valid_solution(G, c, k):
     Returns:
         bool: false if removing k and c disconnects the graph
     """
-    size = len(G)
-    H = G.copy()
-
+    size = G.num_vertices()
+    mask_e = G.new_edge_property("bool")
     for road in k:
-        assert H.has_edge(road[0], road[1]), "Invalid Solution: {} is not a valid edge in graph G".format(road)
-    H.remove_edges_from(k)
+        e = G.edge(road[0],road[1])
+        assert e, "Invalid Solution: {} is not a valid edge in graph G".format(road)
+    G.set_edge_filter(mask_e, inverted=True)
     
+    mask_v = G.new_vertex_property("bool")
     for city in c:
-        assert H.has_node(city), "Invalid Solution: {} is not a valid node in graph G".format(city)
-    H.remove_nodes_from(c)
-    
-    assert H.has_node(0), 'Invalid Solution: Source vertex is removed'
-    assert H.has_node(size - 1), 'Invalid Solution: Target vertex is removed'
+        v = G.vertex(city)
+        mask_v[v] = 1
+    G.set_vertex_filter(mask_v, inverted=True)
 
-    return nx.is_connected(H)
+    #'Invalid Solution: Source vertex is removed'
+    G.vertex(0)
+    #'Invalid Solution: Target vertex is removed'
+    G.vertex(size - 1)
+
+    is_valid = is_connected(G)
+
+    G.set_edge_filter(None)
+    G.set_vertex_filter(None)
+
+    return is_valid
 
 def calculate_score(G, c, k):
     """
@@ -36,12 +60,19 @@ def calculate_score(G, c, k):
     Returns:
         float: total score
     """
-    H = G.copy()
-    assert is_valid_solution(H, c, k)
-    node_count = len(H.nodes)
-    original_min_dist = nx.dijkstra_path_length(H, 0, node_count-1)
-    H.remove_edges_from(k)
-    H.remove_nodes_from(c)
-    final_min_dist = nx.dijkstra_path_length(H, 0, node_count-1)
+    assert is_valid_solution(G, c, k)
+    node_count = G.num_vertices()
+    original_min_dist = gt_topo.shortest_path(G, G.vertex(0), G.vertex(node_count - 1), weights=G.edge_properties['weight'])
+
+    mask_e = G.new_edge_property("bool")
+    G.set_edge_filter(mask_e, inverted=True)
+    mask_v = G.new_vertex_property("bool")
+    G.set_vertex_filter(mask_v, inverted=True)
+
+    final_min_dist = gt_topo.shortest_path(G, G.vertex(0), G.vertex(node_count - 1), weights=G.edge_properties['weight'])
+
+    G.set_edge_filter(None)
+    G.set_vertex_filter(None)
+
     difference = final_min_dist - original_min_dist
     return difference

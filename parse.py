@@ -86,21 +86,22 @@ def read_output_file(G, path):
     Returns:
         score: the difference between the new and original shortest path
     """
-    H = G.copy()
-    if len(H) >= 20 and len(H) <= 30:
+    H = G
+    size = num_vertices(H)
+    if size >= 20 and size <= 30:
         max_cities = 1
         max_roads = 15
-    elif len(H) > 30 and len(H) <= 50:
+    elif size > 30 and size <= 50:
         max_cities = 3
         max_roads = 50
-    elif len(H) > 50 and len(H) <= 100:
+    elif size > 50 and size <= 100:
         max_cities = 5
         max_roads = 100
     else:
         print('Input Graph is not of a valid size')
 
-    assert H.has_node(0), 'Source vertex is missing in input graph'
-    assert H.has_node(len(G) - 1), 'Target vertex is missing in input graph'
+    assert H.vertex(0), 'Source vertex is missing in input graph'
+    assert H.vertex(size - 1), 'Target vertex is missing in input graph'
 
     cities = []
     removed_edges = []
@@ -117,7 +118,7 @@ def read_output_file(G, path):
             city = fo.readline().strip()
             assert city.isdigit(), 'Specified vertex is not a digit'
             city = int(city)
-            assert H.has_node(city), 'Specified vertex is not in input graph'
+            assert H.vertex(city), 'Specified vertex is not in input graph'
             cities.append(city)
 
         number_of_roads = fo.readline().strip()
@@ -130,7 +131,7 @@ def read_output_file(G, path):
             assert road[0].isdigit() and road[1].isdigit()
             u = int(road[0])
             v = int(road[1])
-            assert H.has_edge(u, v), 'Specified edge is not in input graph'
+            assert H.edge(u, v), 'Specified edge is not in input graph'
             removed_edges.append((u,v))
 
     return utils.calculate_score(G, cities, removed_edges)
@@ -146,17 +147,23 @@ def write_output_file(G, c, k, path):
     Returns:
         None
     """
-    H = G.copy()
-
+    mask_e = G.new_edge_property("bool")
     for road in k:
-        assert H.has_edge(road[0],road[1]), "{} is not a valid edge in graph G".format(road)
-    H.remove_edges_from(k)
+        e = G.edge(road[0],road[1])
+        assert e, "{} is not a valid edge in graph G".format(road)
+        mask_e[e] = 1
+    G.set_edge_filter(mask_e, inverted=True)
     
+    mask_v = G.new_vertex_property("bool")
     for city in c:
-        assert H.has_node(city), "{} is not a valid node in graph G".format(city)
-    H.remove_nodes_from(c)
+        v = G.vertex(city)
+        mask_v[v] = 1
+    G.set_vertex_filter(mask_v, inverted=True)
 
-    assert nx.is_connected(H), "The solution is invalid as the graph disconnects"
+    assert is_connected(G), "The solution is invalid as the graph disconnects"
+
+    G.set_edge_filter(None)
+    G.set_vertex_filter(None)
 
     with open(path, "w") as fo:
         fo.write(str(len(c)) + "\n")
