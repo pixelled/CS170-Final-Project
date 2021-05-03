@@ -43,6 +43,7 @@ def solve(G):
     g.set_vertex_filter(None)
     return c, k
 
+
 if __name__ == '__main__':
     for i in range(1, 10):
         path = f"inputs/large/large-{i}.in"
