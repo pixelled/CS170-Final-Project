@@ -49,5 +49,5 @@ if __name__ == "__main__":
         print(c)
         G.set_vertex_filter(None)
         assert is_valid_solution(G, c, k)
-        print("Sample: " + i + " Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+        print("Sample: " + str(i) + " Shortest Path Difference: {}".format(calculate_score(G, c, k)))
         write_output_file(G, c, k, 'test.out')

@@ -118,7 +118,7 @@ class MVE_solver:
         """
         mask_e = g.new_edge_property("bool")
         g.set_edge_filter(mask_e, inverted=True)
-        print([x for x in g.get_edge_filter()])
+        # print([x for x in g.get_edge_filter()])
         list_edge_to_remove = []
 
         for i in range(k):
