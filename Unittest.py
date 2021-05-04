@@ -22,14 +22,14 @@ class MyTestCase(unittest.TestCase):
         g = MVE_solver.nx2gt(g_nx)
         return g
 
-    def get_test_sample(self):
-        inputs = os.getcwd() + "/test.in"
+    def get_test_sample(self, idx):
+        inputs = os.getcwd() + "/inputs/large/large-" +str(idx) + ".in"
         g_nx = parse.read_input_file(inputs)
         gt = MVE_solver.nx2gt(g_nx)
         return gt
 
     def test_get_test_sample(self):
-        inputs = os.getcwd() + "/test_2.in"
+        inputs = os.getcwd() + "/input/large/large-1.in"
         g_nx = parse.read_input_file(inputs)
         g = MVE_solver.nx2gt(g_nx)
         max_dist = -1
@@ -131,11 +131,12 @@ class MyTestCase(unittest.TestCase):
         pass
 
     def test_MVE(self):
-        g = self.get_test_sample()
-        target = g.vertex(g.num_vertices() - 1)
-        my_MVE = MVE_solver.MVE_solver(target)
-        edge_list = my_MVE.solve(g, 5)
-        print(edge_list)
+        for i in range(1, 11):
+            g = self.get_test_sample(i)
+            target = g.vertex(g.num_vertices() - 1)
+            my_MVE = MVE_solver.MVE_solver(target)
+            edge_list = my_MVE.solve(g, 100)
+            print(edge_list)
 
 
 if __name__ == '__main__':

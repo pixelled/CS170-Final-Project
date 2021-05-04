@@ -51,10 +51,17 @@ def get_shortest_path_tree(g: gt.Graph, source):
     """
     shortest_path_tree = gt.Graph(directed=True)
     dist_map, pred_map = gt_topo.shortest_distance(g, source, pred_map=True, weights=g.edge_properties['weight'])
-    num_v = g.num_vertices()
+    vertex_filter = g.get_vertex_filter()
+    num_v = len(vertex_filter[0].a)
     shortest_path_tree.add_vertex(num_v)
+    shortest_path_tree.set_vertex_filter(vertex_filter[0], inverted=True)
 
-    edge_list = zip([x for x in pred_map.a], [x for x in range(num_v)])
+    edge_list = []
+    for i in range(num_v):
+        if vertex_filter[0].a[i] != 1:
+            edge_list.append((pred_map.a[i], i))
+    # edge_list = zip([x for x in pred_map.a], [x for x in range(num_v)])
+    # print(len([i for i in edge_list]))
     shortest_path_tree.add_edge_list(edge_list)
     gt_stat.remove_self_loops(shortest_path_tree)
     return shortest_path_tree, dist_map

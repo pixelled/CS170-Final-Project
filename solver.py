@@ -9,7 +9,7 @@ import glob
 import MVE_solver as MVE
 import MVN
 
-def solve(G):
+def solve(g):
     """
     Args:
         G: networkx.Graph
@@ -17,8 +17,6 @@ def solve(G):
         c: list of cities to remove
         k: list of edges to remove
     """
-    g = MVE_solver.nx2gt(G)
-
     size = g.num_vertices()
     if size >= 20 and size <= 30:
         max_cities = 1
@@ -45,14 +43,17 @@ def solve(G):
 
 
 if __name__ == '__main__':
-    for i in range(1, 10):
-        path = f"inputs/large/large-{i}.in"
-        G = read_input_file(path)
-        c, k = solve(G)
-        assert is_valid_solution(G, c, k)
-        print(f"{i}th input: len(c):{len(c)}, len(k):{len(k)}")
-        print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
-        write_output_file(G, c, k, 'test.out')
+    types = ["small", "medium", "large"]
+    for type in types:
+        for i in range(1, 10):
+            path = f"inputs/{type}/{type}-{i}.in"
+            G = read_input_file(path)
+            G = MVE_solver.nx2gt(G)
+            c, k = solve(G)
+            assert is_valid_solution(G, c, k)
+            print(f"{i}th input: len(c):{len(c)}, len(k):{len(k)}")
+            print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+            write_output_file(G, c, k, f"outputs/{type}/{type}-{i}.out")
 
 # Here's an example of how to run your solver.
 # Usage: python3 solver.py test.in
